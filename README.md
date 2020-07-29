@@ -58,6 +58,7 @@ OPTIONS:
         --manifest-path <manifest_path>      Path to the manifest to execute [default: Cargo.toml]
     -r, --remote <remote>                    Remote ssh build server
     -d, --rustup-default <rustup_default>    Rustup default (stable|beta|nightly) [default: stable]
+    -p, --build-root <build_root>            Remote build root path to place the code. Default value is ~/remote-builds
 
 ARGS:
     <command>              cargo command that will be executed remotely

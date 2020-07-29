@@ -42,6 +42,13 @@ enum Opts {
         env: String,
 
         #[structopt(
+        short = "p",
+        long = "build-root",
+        help = "Remote build root path to place the code. Default value is ~/remote-builds"
+        )]
+        build_root: Option<String>,
+
+        #[structopt(
             short = "c",
             long = "copy-back",
             help = "Transfer the target folder or specific file from that folder back to the local machine"
@@ -115,6 +122,7 @@ fn main() {
         build_env,
         rustup_default,
         env,
+        build_root,
         copy_back,
         no_copy_lock,
         manifest_path,
@@ -130,7 +138,7 @@ fn main() {
     let project_dir = project_metadata.workspace_root;
     info!("Project dir: {:?}", project_dir);
 
-    let configs = vec![
+    let configs = &vec![
         config_from_file(&project_dir.join(".cargo-remote.toml")),
         xdg::BaseDirectories::with_prefix("cargo-remote")
             .ok()
@@ -143,7 +151,7 @@ fn main() {
         .or_else(|| {
             configs
                 .into_iter()
-                .flat_map(|config| config.and_then(|c| c["remote"].as_str().map(String::from)))
+                .flat_map(|config| config.clone().and_then(|c| c["remote"].as_str().map(String::from)))
                 .next()
         })
         .unwrap_or_else(|| {
@@ -154,7 +162,16 @@ fn main() {
     // generate a unique build path by using the hashed project dir as folder on the remote machine
     let mut hasher = DefaultHasher::new();
     project_dir.hash(&mut hasher);
-    let build_path = format!("~/remote-builds/{}/", hasher.finish());
+
+    let build_root = build_root
+        .or_else(|| {
+            configs
+                .into_iter()
+                .flat_map(|config| config.clone().and_then(|c| c["build-root"].as_str().map(String::from)))
+                .next()
+        })
+        .unwrap_or_else(|| "~/remote-builds".to_string());
+    let build_path = format!("{}/{}/", build_root, hasher.finish());
 
     info!("Transferring sources to build server.");
     // transfer project to build server
